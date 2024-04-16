@@ -1,0 +1,10 @@
+rpi02ws:
+  hosts:
+    rpi02w-1.local:
+      ansible_host: "Living Room"
+    rpi02w-2.local:
+      ansible_host: "Kitchen"
+    rpi02w-3.local:
+      ansible_host: "Bedroom"
+    # rpi02w-4:
+    #   ansible_host: "Office"
