@@ -1,0 +1,8 @@
+- name: Install room-assistant docker
+  hosts: all
+  strategy: free
+  roles:
+    - room-assistant-docker
+  vars:
+    # Disabled for convenience, but shold be enabled in "production"
+    ansible_host_key_checking: false

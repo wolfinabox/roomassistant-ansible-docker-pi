@@ -1,0 +1,105 @@
+- name: Install dependencies
+  when: skip_update is not defined or skip_update == false
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    #TODO: Trim down this list of dependencies
+    package:
+      - docker
+      - dnsutils
+      - avahi-daemon
+      - avahi-utils
+      - mdns-scan
+      - libavahi-compat-libdnssd-dev
+      - libsystemd-dev
+      - build-essential
+      - bluetooth
+      - libbluetooth-dev
+      - libudev-dev
+      - libcairo2-dev
+      - libpango1.0-dev
+      - libjpeg-dev
+      - libgif-dev
+      - librsvg2-dev
+
+- name: Uninstall old python2 modules
+  when: skip_update is not defined or skip_update == false
+  ansible.builtin.pip:
+    name:
+      - docker-py
+    state: absent
+
+- name: Install python3 modules
+  when: skip_update is not defined or skip_update == false
+  ansible.builtin.pip:
+    name:
+      - docker
+
+# This is to allow room-assistant to restart the bluetooth interface
+# when needed, without needing to run as root
+# https://unix.stackexchange.com/a/182559
+- name: Allow unprivileged hcitool usage
+  when: skip_update is not defined or skip_update == false
+  become: true
+  ansible.builtin.shell: "setcap 'cap_net_raw,cap_net_admin+eip' `which hcitool`"
+
+- name: Allow unprivileged hciconfig usage
+  when: skip_update is not defined or skip_update == false
+  become: true
+  ansible.builtin.shell: "setcap 'cap_net_raw,cap_net_admin+eip' `which hciconfig`"
+
+- name: Get docker image
+  when: skip_update is not defined or skip_update == false
+  become: true
+  community.docker.docker_image:
+    name: mkerix/room-assistant
+    tag: "{{ room_assistant_version }}"
+    source: pull
+
+- name: Stop room-assistant docker container
+  become: true
+  community.docker.docker_container:
+    name: room-assistant
+    state: absent
+  ignore_errors: true
+
+- name: Print config path
+  ansible.builtin.debug:
+    msg: "Using config dir: '{{ room_assistant_config_path }}'"
+
+- name: Remove old config directory
+  ansible.builtin.file:
+    path: "{{ room_assistant_config_path }}"
+    state: absent
+  ignore_errors: true
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: "{{ room_assistant_config_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Create global config file
+  when: room_assistant_global_config is defined
+  ansible.builtin.copy:
+    dest: "{{ room_assistant_config_path }}/{{ ansible_hostname }}.yaml"
+    content: "{{ room_assistant_global_config | to_nice_yaml(indent=2) }}"
+    mode: "0644"
+
+- name: Create config file
+  when: room_assistant_config is defined
+  ansible.builtin.copy:
+    dest: "{{ room_assistant_config_path }}/local.yaml"
+    content: "{{ room_assistant_config | to_nice_yaml(indent=2) }}"
+    mode: "0644"
+
+- name: Start room-assistant docker container
+  become: true
+  community.docker.docker_container:
+    name: room-assistant
+    image: mkerix/room-assistant:{{ room_assistant_version }}
+    restart_policy: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/dbus:/var/run/dbus
+      - "{{ room_assistant_config_path }}:/room-assistant/config"

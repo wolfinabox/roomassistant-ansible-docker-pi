@@ -1,0 +1,3 @@
+room_assistant_version: latest
+room_assistant_peer_dependencies: []
+room_assistant_config_path: "{{ ansible_env.HOME }}/room-assistant/config"

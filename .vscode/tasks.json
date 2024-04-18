@@ -1,0 +1,26 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Ansible Playbook",
+            "command": "ansible-playbook",
+            "type": "shell",
+            "args": [
+                "-i",
+                "inventory.yaml",
+                "room-assistant-docker.yaml",
+            //    "--ask-pass" // Uncomment  this line to prompt for SSH password
+            ],
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "presentation": {
+                "reveal": "always"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

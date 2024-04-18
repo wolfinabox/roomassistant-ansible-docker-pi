@@ -1,10 +1,49 @@
-rpi02ws:
+all:
   hosts:
-    rpi02w-1.local:
-      ansible_host: "Living Room"
-    rpi02w-2.local:
-      ansible_host: "Kitchen"
-    rpi02w-3.local:
-      ansible_host: "Bedroom"
-    # rpi02w-4:
-    #   ansible_host: "Office"
+    raspberrypi-1.local: # Hostname (or IP) of a device to run room-assistant on
+      room_assistant_config: # Any configs specific for this device
+        global:
+          instanceName: "Living Room" # Human-friendly name of the room-assistant instance (shows up in Hme Assistant)
+      skip_update: true # Skip updating/installing dependencies, Python modules, docker image, and other "one-time" settings
+                        # This can significantly speed up redeploys when changing configs 
+    raspberrypi-2.local:
+      room_assistant_config:
+        global:
+          instanceName: "Kitchen"
+      skip_update: true
+    raspberrypi-3.local:
+      room_assistant_config:
+        global:
+          instanceName: "Bedroom"
+      skip_update: true
+    raspberrypi-4.local:
+      room_assistant_config:
+        global:
+          instanceName: "Office"
+  vars:
+    room_assistant_global_config:
+      global:
+        instanceName: "{{ ansible_hostname }}"
+        integrations:
+          - homeAssistant
+          - bluetoothLowEnergy
+      homeAssistant:
+        mqttUrl: "mqtt://homeassistant.local:1883" # URL of your MQTT broker (typically your Home Assistant instance)
+        sendMqttRoom: true
+        mqttOptions:
+          username: mqttuser
+          password: mqttpassword
+      cluster:
+        autoDiscovery: true
+        port: 6425
+      bluetoothLowEnergy:
+        timeout: 60
+        allowlist:
+          - "abcd1234abcd1234abcd1234abcd1234-100-1" # My keys (iBeacon device in UUID-MAJOR-MINOR format)
+          - "abcd1234efgh" # My phone (regular BLE device like a phone or smartwatch)
+        tagOverrides:
+          "abcd1234abcd1234abcd1234abcd1234-100-1":
+            name: My keys # Human-friendly name of the device (shows up in Home Assistant)
+          "abcd1234efgh":
+            name: My phone
+      # Other room-assistant configs...
